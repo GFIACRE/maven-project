@@ -1,0 +1,53 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Clone Codebase') {
+            steps {
+                echo 'Clone Codebase from github'
+                git 'https://github.com/GFIACRE/maven-project.git'
+            }
+        }
+        stage('Compile') {
+            steps {
+                echo 'Compiling Project'
+                withMaven(maven:'localMaven')
+                {
+                    sh "mvn compile"
+                }
+            }
+        }
+        stage('Units Tests') {
+            steps {
+                echo 'Testing'
+                withMaven(maven:'localMaven')
+                {
+                    sh "mvn test"
+                }
+            }
+        }
+        stage('Build project') {
+            steps {
+                echo 'Packaging'
+                withMaven(maven:'localMaven')
+                {
+                    sh "mvn -B -DskipTests clean package "
+                }
+            }
+        }
+        stage('Analysis with Sonarcube') {
+            steps {
+                echo 'Analyse'
+                withSonarQubeEnv(installationName:'localSonar' , credentialsId: 'cred4sonar')
+                {
+                    sh "mvn -B -DskipTests clean package sonar:sonar"
+                }
+            }
+        }
+        stage('Deploy Artefact') {
+            steps {
+                echo 'Deploy Artefact'
+            }
+        }
+    }
+}
